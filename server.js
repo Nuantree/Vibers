@@ -69,8 +69,22 @@ const sendYou = (p) => send(p, {
 
 function persist(p) {
   if (p.wallet) saved.wallets[p.wallet] = progress(p);
-  else if (p.session) saved.guests[p.session] = progress(p);
+  // A guest that connected but never played leaves nothing on disk.
+  else if (p.session && p.acted) saved.guests[p.session] = { ...progress(p), seen: Date.now() };
 }
+
+// Drop guests idle past the TTL, then the oldest beyond maxGuests. Online guests are kept.
+function pruneGuests() {
+  const online = new Set([...players.values()].map((p) => p.session).filter(Boolean));
+  const cutoff = Date.now() - config.guestTtlDays * 86_400_000;
+  for (const [id, g] of Object.entries(saved.guests)) if (!online.has(id) && g.seen < cutoff) delete saved.guests[id];
+  const idle = Object.entries(saved.guests).filter(([id]) => !online.has(id)).sort((a, b) => a[1].seen - b[1].seen);
+  for (const [id] of idle.slice(0, Math.max(0, Object.keys(saved.guests).length - config.maxGuests))) delete saved.guests[id];
+}
+// Saves from before `seen` existed start their idle clock now rather than being wiped.
+for (const g of Object.values(saved.guests)) g.seen ??= Date.now();
+pruneGuests();
+setInterval(pruneGuests, 3_600_000);
 
 async function refreshBalance(p) {
   if (!p.wallet || process.env.OFFLINE === '1') return;
@@ -242,14 +256,22 @@ setInterval(() => {
   }
 }, 2000);
 
+// A slow RPC can make one pass outlast the interval; never run two passes at once.
+let rechecking = false;
 setInterval(async () => {
-  if (process.env.OFFLINE === '1') return;
-  for (const p of players.values()) await refreshBalance(p);
+  if (process.env.OFFLINE === '1' || rechecking) return;
+  rechecking = true;
+  try { await recheckAll(); } finally { rechecking = false; }
+}, config.recheckMs);
+
+async function recheckAll() {
+  for (const p of [...players.values()]) await refreshBalance(p);
+  const fresh = new Map([...players.values()].filter((p) => p.wallet && p.balanceStatus === 'fresh').map((p) => [p.wallet, p.balance]));
   // Houses decay when their owner (online or not) is no longer a Lord.
   const now = Date.now();
   for (const h of [...saved.houses]) {
-    let bal;
-    try { bal = await tokenBalance(h.owner); } catch { continue; }
+    let bal = fresh.get(h.owner);
+    if (bal === undefined) { try { bal = await tokenBalance(h.owner); } catch { continue; } }
     if (bal >= config.lordMin) {
       if (h.decayingSince) { h.decayingSince = null; broadcast({ t: 'house', house: h }); }
     } else if (!h.decayingSince) {
@@ -261,11 +283,29 @@ setInterval(async () => {
     }
   }
   save();
-}, config.recheckMs);
+}
 
 // ---------- HTTP ----------
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const json = (res, code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
+
+const clientIp = (req) => (config.trustProxy
+  && (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for']?.split(',')[0].trim()))
+  || req.socket.remoteAddress;
+
+// Sliding one-minute window per IP; returns false once `max` is exceeded.
+function perMinute(max) {
+  const hits = new Map();
+  setInterval(() => { const cut = Date.now() - 60_000; for (const [ip, t] of hits) if (t.at(-1) < cut) hits.delete(ip); }, 60_000).unref();
+  return (ip) => {
+    const cut = Date.now() - 60_000, t = (hits.get(ip) ?? []).filter((x) => x > cut);
+    t.push(Date.now()); hits.set(ip, t);
+    return t.length <= max;
+  };
+}
+const buyQuoteAllowed = perMinute(config.buyQuotesPerMinute);
+const connectAllowed = perMinute(config.connPerMinute);
+const liveByIp = new Map();
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -277,6 +317,8 @@ const server = createServer(async (req, res) => {
     });
   }
   if (url.pathname === '/api/buy') {
+    // Each quote costs several RPC reads.
+    if (!buyQuoteAllowed(clientIp(req))) return json(res, 429, { error: '报价请求太频繁，请稍后再试。' });
     const eth = url.searchParams.get('eth'), to = url.searchParams.get('to');
     if (!config.buyOptionsEth.includes(eth) || !isAddress(to ?? '')) return json(res, 400, { error: 'bad params' });
     try { return json(res, 200, await buildBuyTx(eth, getAddress(to))); }
@@ -293,8 +335,12 @@ const server = createServer(async (req, res) => {
 
 // ---------- WebSocket ----------
 const wss = new WebSocketServer({ server, maxPayload: 4096 });
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   ws.on('error', () => {}); // Malformed / oversized frames close this socket only.
+  const ip = clientIp(req);
+  if ((liveByIp.get(ip) ?? 0) >= config.maxConnPerIp || !connectAllowed(ip)) return ws.close(1013, 'too many connections');
+  liveByIp.set(ip, (liveByIp.get(ip) ?? 0) + 1);
+  ws.on('close', () => { const n = liveByIp.get(ip) - 1; if (n > 0) liveByIp.set(ip, n); else liveByIp.delete(ip); });
   const p = {
     id: nextId++, ws, name: `旅人${Math.floor(1000 + Math.random() * 9000)}`, x: SPAWN.x, y: SPAWN.y,
     wallet: null, balance: null, balanceStatus: 'unknown', tier: 'wanderer', skills: { lumberjacking: 10, mining: 10 }, inv: { log: 0, ore: 0 },
@@ -310,13 +356,18 @@ wss.on('connection', (ws) => {
     if (++count > 35) return;
     if (!joined) {
       if (msg.t !== 'hello') return;
-      const name = String(msg.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 16);
+      // Strip control, zero-width and bidi-override characters, which can disguise a name.
+      const name = String(msg.name ?? '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁠-⁩﻿]/g, '')
+        .replace(/\s+/g, ' ').trim().slice(0, 16);
       if (typeof msg.session === 'string' && /^[a-f0-9]{48}$/.test(msg.session) && saved.guests[msg.session]) {
-        p.session = msg.session;
+        p.session = msg.session; p.acted = true;
         for (const other of players.values()) if (other.session === p.session) { persist(other); other.session = null; other.ws.close(4001, 'session replaced'); }
         hydrate(p, saved.guests[p.session]);
       } else p.session = randomBytes(24).toString('hex');
       if (name) p.name = name;
+      // Names are unique among online players, so nobody can pass as someone else.
+      const taken = (n) => [...players.values()].some((o) => o.name.toLowerCase() === n.toLowerCase());
+      if (taken(p.name)) { const base = p.name.slice(0, 11); let i = 2; while (taken(`${base}·${i}`)) i++; p.name = `${base}·${i}`; }
       if (CLOAKS.some(c=>c.id===msg.color)) p.color = msg.color;
       send(p, { t: 'session', session: p.session });
       joined = true;
@@ -331,7 +382,7 @@ wss.on('connection', (ws) => {
       return;
     }
     const h = Object.hasOwn(handlers, msg.t) ? handlers[msg.t] : null;
-    if (h) { try { await h(p, msg); } catch (e) { console.error(msg.t, e); } }
+    if (h) { p.acted = true; try { await h(p, msg); } catch (e) { console.error(msg.t, e); } }
   });
   ws.on('close', () => {
     if (!joined) return;

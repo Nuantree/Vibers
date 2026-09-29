@@ -41,4 +41,17 @@ export const config = {
   buyOptionsEth: ['0.001', '0.005', '0.01'],
 
   dataFile: env.DATA_FILE ?? 'data.json',
+
+  // Abuse limits, per client IP. Behind a reverse proxy or tunnel every client
+  // shares the proxy's IP, so set TRUST_PROXY=1 to read CF-Connecting-IP /
+  // X-Forwarded-For instead (only when the proxy is the sole way in).
+  trustProxy: env.TRUST_PROXY === '1',
+  maxConnPerIp: Number(env.MAX_CONN_PER_IP ?? 8),
+  connPerMinute: Number(env.CONN_PER_MINUTE ?? 30),
+  buyQuotesPerMinute: Number(env.BUY_QUOTES_PER_MINUTE ?? 12),
+
+  // Guest saves are only written once a guest actually plays, and are pruned
+  // after this many idle days or when there are more than maxGuests of them.
+  guestTtlDays: Number(env.GUEST_TTL_DAYS ?? 30),
+  maxGuests: Number(env.MAX_GUESTS ?? 5000),
 };

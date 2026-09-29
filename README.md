@@ -14,6 +14,8 @@ npm start
 
 如果 8790 被其他项目使用，指定 `PORT=8792 npm start`。服务默认只监听本机；需要局域网联机时，可显式设置 `HOST=0.0.0.0`，其他玩家通过这台电脑的局域网 IP 访问同一端口。
 
+防刷限制（按客户端 IP）：同时最多 8 个连接（`MAX_CONN_PER_IP`）、每分钟最多 30 次新连接（`CONN_PER_MINUTE`）、每分钟最多 12 次购买报价（`BUY_QUOTES_PER_MINUTE`）。游客只有真正操作过才会写入存档，闲置超过 30 天（`GUEST_TTL_DAYS`）或总数超过 5000（`MAX_GUESTS`）时清理最旧的。**通过 Cloudflare 隧道或反向代理公开时**，所有玩家看起来都来自同一个本机 IP，必须同时设置 `TRUST_PROXY=1`（按 `CF-Connecting-IP` / `X-Forwarded-For` 区分玩家）；直接对外开放端口时不要设置它，否则 IP 可被伪造。
+
 ```bash
 npm run start:offline   # 纯冒险模式，不发出链上请求
 npm test               # 游戏规则 + 独立服务器联机测试
