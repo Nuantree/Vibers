@@ -1,0 +1,20 @@
+{
+  "name": "viber-demo",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Viber Windhaven: a cozy multiplayer crafting and exploration RPG",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js",
+    "start:offline": "OFFLINE=1 node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "three": "0.186.1",
+    "viem": "^2.21.0",
+    "ws": "^8.18.0"
+  }
+}

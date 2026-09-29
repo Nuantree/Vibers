@@ -1,0 +1,30 @@
+# Installed dependencies and build output
+node_modules/
+coverage/
+dist/
+
+# Player saves, local backups and runtime files
+data.json
+data.json.*
+*.log
+*.pid
+backups/
+*.bak
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+.claude/
+.codex/
+
+# Editor / OS files
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo

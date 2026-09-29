@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#263c32"/><meta name="description" content="在 Viber 大陆采集、制作、钓鱼和冒险。一个值得慢下来的多人小世界。"/>
+<title>Viber 大陆 — 风栖之旅</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='9' width='32' height='32' fill='%23344f3c'/%3E%3Cpath d='M9 9l7 15 8-16M11 20l13-12' stroke='%23e7d4ac' stroke-width='2' fill='none'/%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<canvas id="c" aria-label="Viber 冒险世界：点击地面移动，点击资源采集"></canvas>
+<div class="world-vignette"></div>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="Viber 大陆"><span class="brand-mark" data-icon="leaf" data-size="27"></span><span>VIBER<small>风 栖 之 旅</small></span></a>
+  <span class="top-divider"></span><span class="world-tag">一个值得慢下来的世界<span><i id="connectionDot"></i><span id="connectionText">准备出发</span></span></span>
+  <div class="world-time"><span id="dayIcon" data-icon="sun" data-size="19"></span><span id="dayText">第 1 天 · 午后</span></div>
+  <nav class="top-actions"><span class="network-badge">ROBINHOOD <b>TESTNET</b></span><button id="btnLife" class="icon-button" aria-label="小镇生活" title="小镇生活 (L)"><span data-icon="paw" data-size="20"></span></button><button id="btnSound" class="icon-button" aria-label="开启音效" title="开启音效"><span data-icon="muted" data-size="19"></span></button><button id="btnSettings" class="icon-button" aria-label="画面与手感" title="画面与手感"><span data-icon="settings" data-size="20"></span></button><button id="btnHelp" class="icon-button" aria-label="冒险指南" title="冒险指南"><span data-icon="help" data-size="20"></span></button><button id="btnWallet" class="wallet-button"><span data-icon="wallet" data-size="18"></span><span id="walletLabel">连接钱包</span></button></nav>
+</header>
+<main id="hud" class="hud" aria-label="冒险操作面板">
+  <section class="character paper">
+    <div class="character-heading"><div class="portrait" id="portrait"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 64 11 43 23 35h18l13 9 8 20" fill="#496551"/><path d="M19 21c1-22 31-22 31 2l-6 22H19Z" fill="#37533e"/><path d="M22 23c6-5 15-5 20 0v13c-4 11-16 10-20 0Z" fill="#dfb888"/><path d="m15 29 8-18h20l10 20-15-7-13 1Z" fill="#6b8561"/><path d="M28 30v2m10-2v2" stroke="#37412c" stroke-width="2"/><path d="m25 44 7 8 10-9" fill="#d3c29a"/><path d="m39 48 5 16" stroke="#b59461" stroke-width="4"/></svg><span id="levelBadge">1</span></div><div><div class="eyebrow">THE WANDERER</div><h2 id="sName">无名旅人</h2><div class="tier-line"><span class="tier-dot"></span><span id="sTier">自由冒险者</span></div></div><span class="char-flourish">✧</span></div>
+    <div class="meter-label"><span><span data-icon="heart" data-size="12"></span>生命</span><span id="healthText">100 / 100</span></div><div class="meter health"><i id="healthBar"></i></div>
+    <div class="meter-label stamina-label"><span>体力</span><span id="staminaText">100 / 100</span></div><div class="meter stamina"><i id="staminaBar"></i></div>
+    <div class="meter-label exp-label"><span id="levelText">Lv. 1 · 初入大陆</span><span id="xpText">0 / 60</span></div><div class="meter xp"><i id="xpBar"></i></div>
+    <div class="pocket"><span><span data-icon="coin" data-size="17"></span><b id="goldCount">0</b><small>金币</small></span><button id="btnInventory" class="text-button">背包 <span data-icon="arrow" data-size="14"></span></button></div>
+    <div class="resource-strip"><span title="橡木"><i data-icon="wood" data-size="20"></i><b id="invL">0</b></span><span title="铁矿"><i data-icon="ore" data-size="20"></i><b id="invO">0</b></span><span title="月光草"><i data-icon="herb" data-size="20"></i><b id="invH">0</b></span></div>
+  </section>
+  <section class="quest-panel paper"><div class="section-title"><span data-icon="scroll" data-size="18"></span><h2>冒险手记</h2><button class="text-button" id="btnQuests" aria-label="查看全部委托">全部 <span id="questCount">0/7</span></button></div><div id="trackedQuest"></div><div class="quest-foot"><span class="tiny-star">✧</span> 小小的步伐，也会走得很远。</div></section>
+  <section class="minimap-panel paper"><div class="section-title"><span data-icon="compass" data-size="17"></span><h2 id="regionName">风栖小镇</h2><span class="safe-dot" id="regionStatus">安全区</span></div><button id="btnMap" class="minimap-button" title="展开世界地图 (M)" aria-label="展开世界地图"><canvas id="minimap" width="240" height="142"></canvas><span class="map-corner tl"></span><span class="map-corner br"></span><span class="map-north">N</span><span class="map-expand">M</span></button><div class="map-footer"><span id="coords">40, 31</span><span id="onlineCount">1 位旅人在线</span></div></section>
+  <div class="combat-intro paper" id="combatIntro"><span class="eyebrow">THE ART OF ADVENTURE</span><h3>今天，也想出发。</h3><p>种一朵花，结识一位小伙伴。<br/>也别忘了练习你的第一剑。</p><button class="small-button life-intro-button" id="btnLifeIntro">找一位同行伙伴 →</button><button class="small-button" id="btnTraining">去练习木桩 →</button><button class="intro-close" id="closeIntro" aria-label="收起战斗提示">×</button></div><div id="bossHud" class="boss-hud" hidden><span>ANCIENT GUARDIAN</span><strong id="bossName">遗迹守卫</strong><div class="meter"><i id="bossBar"></i></div><small id="bossText"></small></div><div class="combo-display" id="comboDisplay" hidden><strong id="comboNumber">1</strong><span id="comboLabel">连击</span><div>Ⅰ · Ⅱ · Ⅲ</div></div><div class="view-controls"><button id="zoomOut" aria-label="拉远视角">−</button><span>视角</span><button id="zoomIn" aria-label="拉近视角">＋</button></div>
+  <div class="area-note"><span class="area-rule"></span><span id="areaSubtitle">林间有风，旅途有你。</span><span class="area-rule"></span></div>
+  <section class="chat-panel paper" id="chat"><button id="btnChat" class="chat-title"><span data-icon="chat" data-size="17"></span><span>大陆见闻</span><small>ENTER ↵</small></button><div id="log" role="log" aria-live="polite"></div><form id="chatForm"><input id="chatInput" maxlength="120" aria-label="世界聊天" placeholder="和路过的旅人打个招呼…" autocomplete="off"/><button aria-label="发送聊天" type="submit"><span data-icon="arrow" data-size="17"></span></button></form></section>
+  <div class="interaction-hint" id="interactionHint"><kbd>E</kbd><span>靠近资源或建筑，开始互动</span></div>
+  <nav class="hotbar" aria-label="快捷操作">
+    <button class="hotkey active" data-action="interact" title="互动 / 采集 (E)"><kbd>E</kbd><span data-icon="axe" data-size="27"></span><span>互动</span></button>
+    <button class="hotkey" data-action="attack" title="三段连击：连续按或按住空格"><kbd>␣</kbd><span data-icon="sword" data-size="27"></span><span>连击</span></button>
+    <button class="hotkey" data-action="dash" title="闪避 · 25 体力 (Shift)"><kbd>⇧</kbd><span data-icon="boot" data-size="27"></span><span>闪避</span><b class="cooldown" id="dashCooldown"></b></button>
+    <button class="hotkey" data-action="skill" title="回旋斩 · 35 体力 (F)"><kbd>F</kbd><span data-icon="spark" data-size="27"></span><span>回旋斩</span><b class="cooldown" id="skillCooldown"></b></button>
+    <button class="hotkey" data-action="craft" title="制作 (C)"><kbd>C</kbd><span data-icon="fire" data-size="27"></span><span>制作</span></button>
+    <span class="hotbar-divider"></span>
+    <button class="hotkey" data-action="potion" title="使用药水 (Q)"><kbd>Q</kbd><span data-icon="potion" data-size="26"></span><span>药水</span><b id="potionCount">2</b></button>
+    <button class="hotkey" data-action="map" title="世界地图 (M)"><kbd>M</kbd><span data-icon="map" data-size="27"></span><span>地图</span></button>
+    <button class="hotkey" data-action="recall" title="回到小镇 (R)"><kbd>R</kbd><span data-icon="home" data-size="27"></span><span>回城</span></button>
+  </nav>
+  <div class="bottom-note"><span>W A S D</span> 移动 <i>·</i> 点击探索 <i>·</i> 滚轮缩放<span class="build-note"><button id="btnBuild" class="text-button">领主建房 <kbd>B</kbd></button></span></div>
+  <div class="mobile-move" aria-label="触屏移动"><button data-move="w" aria-label="向上移动">↑</button><button data-move="a" aria-label="向左移动">←</button><button data-move="s" aria-label="向下移动">↓</button><button data-move="d" aria-label="向右移动">→</button></div>
+</main>
+<div id="toasts" aria-live="polite"></div><div id="discovery" class="discovery"><span>发现新的地方</span><h2></h2><p></p></div>
+<div id="fishing" class="fishing paper" hidden><span data-icon="fish" data-size="30"></span><div><strong id="fishTitle">等待鱼儿上钩…</strong><p id="fishDesc">放慢呼吸，留意浮标。</p></div><button id="btnReel"><kbd>E</kbd> 收竿</button></div>
+<div id="tooltip" class="tooltip" hidden></div>
+<div id="join" class="modal show welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle"><div class="welcome-card"><div class="welcome-top"><span class="brand-mark" data-icon="leaf" data-size="26"></span><span>VIBER <em>CHAPTER 01</em></span><span class="welcome-star">✧</span></div><div class="eyebrow">WELCOME TO WINDHAVEN</div><h1 id="welcomeTitle">把日常留在岸边。<br/><span>让冒险慢慢发生。</span></h1><p class="welcome-copy">在森林里收集第一块木头，在湖边等一条鱼。<br/>带着小伙伴种花、探索，把平凡的一天过成冒险。</p><div class="welcome-features"><span><i data-icon="compass" data-size="17"></i>自由探索</span><span><i data-icon="axe" data-size="17"></i>采集制作</span><span><i data-icon="sword" data-size="17"></i>连击闪避</span></div><label class="input-label" for="nameInput">给这段旅程，一个名字</label><div class="name-row"><input id="nameInput" maxlength="16" placeholder="旅人的名字" autocomplete="nickname"/><div class="color-choices" aria-label="选择披风颜色"><button data-color="sage" class="selected" aria-label="苔绿披风" aria-pressed="true"></button><button data-color="amber" aria-label="琥珀披风" aria-pressed="false"></button><button data-color="iris" aria-label="鸢尾披风" aria-pressed="false"></button><button data-color="rose" aria-label="莓果披风" aria-pressed="false"></button><button data-color="sky" aria-label="雾蓝披风" aria-pressed="false"></button></div></div><button id="btnJoin" class="primary-button">启程，去风栖小镇 <span data-icon="arrow" data-size="21"></span></button><p id="joinMessage" class="welcome-foot">无需钱包即可游玩 · 自动保存你的冒险</p><div class="welcome-bottom"><span>一个可以一起生活的小小大陆</span><span>COZY ADVENTURE · 0.4</span></div></div></div>
+<div id="dialog" class="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><section class="dialog-card paper"><div class="dialog-header"><div><div class="eyebrow" id="dialogEyebrow">WINDHAVEN JOURNAL</div><h2 id="dialogTitle">冒险手记</h2></div><button id="dialogClose" class="icon-button" aria-label="关闭窗口"><span data-icon="close"></span></button></div><div id="dialogContent"></div></section></div>
+<script type="module" src="/game.js"></script>
+</body>
+</html>
