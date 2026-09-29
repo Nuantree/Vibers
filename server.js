@@ -343,7 +343,7 @@ wss.on('connection', (ws) => {
 
 // The game is playable even when testnet RPC is temporarily unavailable.
 if (process.env.OFFLINE === '1') token.reason = 'OFFLINE';
-else loadToken().catch(() => { token.buyable = false; token.reason = 'RPC_UNAVAILABLE'; console.error('Testnet unavailable; adventure mode remains playable.'); });
+else loadToken().catch(() => { console.error(`Testnet token unavailable (${token.reason}); adventure mode remains playable.`); });
 server.listen(config.port, process.env.HOST ?? '127.0.0.1', () => {
   console.log(`Viber demo on http://localhost:${server.address().port}`);
   console.log(`Token ${token.symbol} ${token.address} · in-game buy: ${token.buyable ? 'on (' + token.curve + ')' : 'off: ' + token.reason}`);

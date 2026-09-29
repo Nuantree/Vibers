@@ -1,3 +1,4 @@
+import { renderTokenPanel } from './token-ui.js';
 import { createLifeUI } from './life-ui.js';
 import { ITEMS, RECIPES, SUPPLIES, QUESTS, POIS, STATIONS, CHESTS, TRAINING, GARDENS, decorAt, levelFor, xpFor, distance } from './catalog.js';
 import { icon, paintIcons } from './icons.js';
@@ -272,9 +273,9 @@ function renderMenu(){
     root.innerHTML=`<p class="dialog-copy">点击地图或地标自动前往。浅色圆点是你，虚线指向目的地。</p><div class="map-large-wrap"><canvas id="worldMap" width="960" height="720" aria-label="世界地图，点击选择目的地"></canvas></div><div class="map-pois">${POIS.map(p=>`<button data-go="${p.id}">${icon(p.icon,24)}<span>${p.name}<small>${y.discovered.includes(p.id)?'已发现 · '+p.sub:'未发现 · 出发看看'}</small></span></button>`).join('')}</div>`;
     renderer.drawMap($('worldMap'),true);$('worldMap').onclick=e=>{const box=e.currentTarget.getBoundingClientRect();navigate(targetAt({x:Math.min(S.W-1,Math.floor((e.clientX-box.left)/box.width*S.W)),y:Math.min(S.H-1,Math.floor((e.clientY-box.top)/box.height*S.H))}));};
   }else if(menu==='shop'){
-    const near=distance(me(),STATIONS[0])<=2;root.innerHTML=`<p class="dialog-copy">“带上你的收获吧，旅人。森林的礼物，总有用得上的人。”</p><div class="stat-line"><span>你的金币</span><b id="shopGold">${fmt(y.gold)}</b></div><h3 class="dialog-section-title">旅途补给 · 使用游戏金币</h3>${SUPPLIES.map(s=>`<div class="shop-row">${icon(ITEMS[s.item].icon,22)}<span>${s.name} × ${s.amount}</span><b>${s.price} 金币</b><button class="small-button" data-supply="${s.id}" ${!near||y.gold<s.price?'disabled':''}>兑换</button></div>`).join('')}<h3 class="dialog-section-title">出售收获</h3>${Object.entries({log:2,ore:3,herb:3,fish:8,crystal:20}).map(([id,price])=>`<div class="shop-row">${icon(ITEMS[id].icon,22)}<span>${ITEMS[id].name} <small id="shopInv-${id}">× ${y.inv[id]}</small></span><b>+${price} 金币</b><button class="small-button" data-sell="${id}" ${!near||!y.inv[id]?'disabled':''}>出售 1 个</button></div>`).join('')}<h3 class="dialog-section-title">链上身份 · 可选体验</h3><div class="chain-info">持有测试网代币可解锁领主身份、建房与技能成长加成。<br/>冒险、制作和任务无需钱包。<br/><a href="${esc(S.cfg.vibeUrl)}" target="_blank" rel="noopener">在 vibe/vibe 查看代币 ↗</a> · <a href="${esc(S.cfg.chain.faucet)}" target="_blank" rel="noopener">测试网水龙头 ↗</a></div><div class="buy-options" id="shopOpts"></div><p id="shopMsg" class="shop-msg"></p>`;renderBuyOptions();
+    const near=distance(me(),STATIONS[0])<=2;root.innerHTML=`<p class="dialog-copy">“带上你的收获吧，旅人。森林的礼物，总有用得上的人。”</p><div class="stat-line"><span>你的金币</span><b id="shopGold">${fmt(y.gold)}</b></div><h3 class="dialog-section-title">旅途补给 · 使用游戏金币</h3>${SUPPLIES.map(s=>`<div class="shop-row">${icon(ITEMS[s.item].icon,22)}<span>${s.name} × ${s.amount}</span><b>${s.price} 金币</b><button class="small-button" data-supply="${s.id}" ${!near||y.gold<s.price?'disabled':''}>兑换</button></div>`).join('')}<h3 class="dialog-section-title">出售收获</h3>${Object.entries({log:2,ore:3,herb:3,fish:8,crystal:20}).map(([id,price])=>`<div class="shop-row">${icon(ITEMS[id].icon,22)}<span>${ITEMS[id].name} <small id="shopInv-${id}">× ${y.inv[id]}</small></span><b>+${price} 金币</b><button class="small-button" data-sell="${id}" ${!near||!y.inv[id]?'disabled':''}>出售 1 个</button></div>`).join('')}<h3 class="dialog-section-title">${esc(S.cfg.token.symbol)} · 风栖之旅代币</h3>${renderTokenPanel(S.cfg,y)}<div class="chain-info">持有 ${esc(S.cfg.token.symbol)} 可解锁领主身份、建房与技能成长加成。<br/>冒险、制作和任务无需钱包。<br/><a href="${esc(S.cfg.vibeUrl)}" target="_blank" rel="noopener">在 vibe/vibe 查看代币 ↗</a> · <a href="${esc(S.cfg.chain.faucet)}" target="_blank" rel="noopener">测试网水龙头 ↗</a></div><div class="buy-options" id="shopOpts"></div><p id="shopMsg" class="shop-msg"></p>`;renderBuyOptions();
   }else if(menu==='wallet'){
-    root.innerHTML=`<p class="dialog-copy">自由冒险无需钱包。连接后可使用链上身份，并将进度保存至钱包。</p><div class="chain-info"><div class="stat-line"><span>网络</span><b>Robinhood Testnet</b></div><div class="stat-line"><span>钱包</span><b>${y.wallet?`${y.wallet.slice(0,8)}…${y.wallet.slice(-6)}`:'尚未连接'}</b></div><div class="stat-line"><span>持仓</span><b>${y.wallet?(y.balanceStatus==='fresh'?fmt(y.balance)+' '+esc(S.cfg.token.symbol):'暂不可用'):'未读取'}</b></div><div class="stat-line"><span>领主门槛</span><b>${fmt(S.cfg.lordMin)} ${esc(S.cfg.token.symbol)}</b></div></div><h3 class="dialog-section-title">领主的生活</h3><p class="dialog-copy">在镇外空草地按 B 建房（${S.cfg.houseCost.log} 橡木 + ${S.cfg.houseCost.ore} 铁矿），技能成长 +50%。<br/>持仓低于门槛后房子会荒废，持续 5 分钟后倒塌。</p><button id="connectWallet" class="primary-button">${y.wallet?'重新读取链上持仓':'连接钱包 · 签名登录'}</button><p class="dialog-copy" style="font-size:10px">登录签名不花费资产。购买测试代币时，交易由你在钱包内确认。<br/>已有钱包存档会替换当前游客进度。</p>`;$('connectWallet').onclick=connectWallet;
+    root.innerHTML=`<p class="dialog-copy">把 ${esc(S.cfg.token.symbol)} 带进风栖小镇，让钱包里的持仓成为你的游戏身份。</p>${renderTokenPanel(S.cfg,y)}<div class="stat-line"><span>当前钱包</span><b>${y.wallet?`${y.wallet.slice(0,8)}…${y.wallet.slice(-6)}`:'尚未连接'}</b></div><h3 class="dialog-section-title">领主的生活</h3><p class="dialog-copy">在镇外空草地按 B 建房（${S.cfg.houseCost.log} 橡木 + ${S.cfg.houseCost.ore} 铁矿），技能成长 +50%。<br/>持仓低于门槛后房子会荒废，持续 5 分钟后倒塌。</p><div class="token-wallet-actions"><button id="connectWallet" class="primary-button">${y.wallet?'重新读取链上持仓':'连接钱包 · 签名登录'}</button><button id="tokenShop" class="small-button">去商店购买 ${esc(S.cfg.token.symbol)} →</button></div><p class="dialog-copy" style="font-size:10px">登录签名不花费资产，购买由你在钱包内确认。游戏金币与链上代币分别计算。<br/>已有钱包存档会替换当前游客进度。</p>`;$('connectWallet').onclick=connectWallet;$('tokenShop').onclick=()=>openDialog('shop');
   }else if(menu==='settings'){
     const options=renderer.settings?.()??{};
     root.innerHTML=`<p class="dialog-copy">画面：${$('c').dataset.renderer} · 当前约 ${$('c').dataset.fps??'—'} FPS<br/>滚轮或右侧 ＋ / − 调整视角，设置会保存在这台设备。</p>${renderer.configure?`<div class="setting-row"><label for="quality">画质 <small>精致含实时柔和阴影，流畅适合较旧设备。</small></label><select id="quality"><option value="high" ${options.quality==='high'?'selected':''}>精致</option><option value="balanced" ${options.quality==='balanced'?'selected':''}>流畅</option></select></div>${[['shake','命中震屏','随重击、受伤反馈轻微震动。'],['numbers','伤害与收获数字','显示伤害、暴击、治疗和奖励。'],['reduced','减少动态效果','关闭震屏与受击停顿，减少装饰粒子。']].map(([id,name,desc])=>`<div class="setting-row"><label for="opt-${id}">${name}<small>${desc}</small></label><input id="opt-${id}" type="checkbox" data-setting="${id}" ${options[id]?'checked':''}/></div>`).join('')}`:'<p class="dialog-copy">当前设备使用兼容画面，仍可体验全部玩法。</p>'}<div class="setting-row"><label for="opt-audio">游戏音效<small>挥剑、命中、闪避、采集与升级反馈。</small></label><input id="opt-audio" type="checkbox" ${soundOn?'checked':''}/></div>`;
@@ -290,13 +291,22 @@ function renderMenu(){
   root.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>send({t:'sell',item:b.dataset.sell}));
   root.querySelectorAll('[data-supply]').forEach(b=>b.onclick=()=>send({t:'supply',id:b.dataset.supply}));
 }
+$('dialogContent').addEventListener('click',async event=>{
+  if(event.target.closest('[data-watch-token]'))await addTokenToWallet();
+  if(event.target.closest('[data-copy-token]')){
+    try{await navigator.clipboard.writeText(S.cfg.token.address);toast('代币合约已复制。');}
+    catch{toast('暂时无法复制，请从代币卡片选中合约地址复制。','bad');}
+  }
+});
 function updateShop(){
   if(!$('shopGold')||!S.you)return;const y=S.you,near=distance(me(),STATIONS[0])<=2;$('shopGold').textContent=fmt(y.gold);
+  const tokenCard=$('dialogContent').querySelector('.token-card');if(tokenCard)tokenCard.outerHTML=renderTokenPanel(S.cfg,y);
   for(const b of document.querySelectorAll('[data-sell]')){$(`shopInv-${b.dataset.sell}`).textContent=`× ${y.inv[b.dataset.sell]}`;b.disabled=!near||!y.inv[b.dataset.sell];}
   for(const b of document.querySelectorAll('[data-supply]'))b.disabled=!near||y.gold<SUPPLIES.find(s=>s.id===b.dataset.supply).price;
 }
 const eth=()=>window.ethereum;
 async function connectWallet(){
+  if(S.cfg?.token.reason==='OFFLINE')return toast('当前为离线冒险模式，钱包功能未启用。');
   if(S.you?.wallet){send({t:'recheck'});toast('正在读取测试网持仓…');return;}
   if(!eth())return toast('当前浏览器没有钱包插件。可在装有钱包的浏览器打开本页。','bad');
   try{[account]=await eth().request({method:'eth_requestAccounts'});send({t:'authStart',address:account});}catch(e){toast(`钱包连接未完成：${e.message??e}`,'bad');}
@@ -307,12 +317,21 @@ async function signLogin(message){
 }
 async function ensureChain(){
   const c=S.cfg.chain,id='0x'+c.id.toString(16);if((await eth().request({method:'eth_chainId'})).toLowerCase()===id)return;
-  try{await eth().request({method:'wallet_switchEthereumChain',params:[{chainId:id}]});}catch(e){if(e.code!==4902&&e?.data?.originalError?.code!==4902)throw e;await eth().request({method:'wallet_addEthereumChain',params:[{chainId:id,chainName:c.name,rpcUrls:[c.rpcUrl],blockExplorerUrls:[c.explorer],nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18}}]});}
+  try{await eth().request({method:'wallet_switchEthereumChain',params:[{chainId:id}]});}catch(e){if(e.code!==4902&&e?.data?.originalError?.code!==4902)throw e;await eth().request({method:'wallet_addEthereumChain',params:[{chainId:id,chainName:c.name,rpcUrls:[c.rpcUrl],blockExplorerUrls:[c.explorer],nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18}}]});await eth().request({method:'wallet_switchEthereumChain',params:[{chainId:id}]});}
+}
+async function addTokenToWallet(){
+  if(!eth())return toast('请在装有钱包插件的浏览器中添加代币。','bad');
+  const t=S.cfg?.token;if(!t?.metadataReady)return toast('正在确认代币信息，请稍后重试。','bad');
+  try{
+    await ensureChain();
+    const added=await eth().request({method:'wallet_watchAsset',params:{type:'ERC20',options:{address:t.address,symbol:t.symbol,decimals:t.decimals,...(t.logoUrl?{image:new URL(t.logoUrl,location.origin).href}:{})}}});
+    toast(added?`${t.symbol} 已添加到钱包。`:'已取消添加代币。');
+  }catch(e){toast(`添加未完成：${e.message??e}`,'bad');}
 }
 let buying=false;
 function renderBuyOptions(){
   const t=S.cfg.token,box=$('shopOpts');if(!box)return;
-  if(!t.buyable){box.innerHTML=`<span class="dialog-copy">${({OFFLINE:'当前为离线冒险模式。',RPC_UNAVAILABLE:'测试网暂不可用。',LOADING:'正在读取测试网信息。',GRADUATED:'该代币已毕业，请前往 vibe/vibe。',NOT_V6:'该代币暂不支持游戏内购买。',NOT_ETH_PAIRED:'该代币不是 ETH 配对。'})[t.reason]??'暂时无法在游戏内购买。'}</span>`;return;}
+  if(!t.buyable){box.innerHTML=`<span class="dialog-copy">${({OFFLINE:'当前为离线冒险模式。',RPC_UNAVAILABLE:'测试网暂不可用。',LOADING:'正在读取测试网信息。',GRADUATED:'该代币已毕业，请前往 vibe/vibe。',UNSUPPORTED_TOKEN:'该代币暂不支持游戏内购买，请前往发行页。',CURVE_COMPLETE:'曲线已完成，请前往发行页查看后续交易。',WRONG_CHAIN:'节点网络不匹配，暂时无法购买。',CURVE_MISMATCH:'代币购买合约未通过核验。',NOT_ETH_PAIRED:'该代币不是 ETH 配对。'})[t.reason]??'暂时无法在游戏内购买。'}</span>`;return;}
   box.innerHTML=S.cfg.buyOptionsEth.map(a=>`<button data-buy="${a}" ${buying?'disabled':''}>${a} 测试 ETH</button>`).join('');box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));
 }
 async function buy(amount){
@@ -321,8 +340,10 @@ async function buy(amount){
   try{
     const accounts=await eth().request({method:'eth_accounts'});if(accounts[0]?.toLowerCase()!==S.you.wallet.toLowerCase())throw new Error('钱包账户已变化，请重新登录后购买。');
     message.textContent='正在读取链上报价…';const r=await fetch(`/api/buy?eth=${encodeURIComponent(amount)}&to=${S.you.wallet}`),tx=await r.json();if(!r.ok)throw new Error(tx.error);
-    message.textContent=`预计获得 ${fmt(tx.expectedTokens)} ${S.cfg.token.symbol}，请在钱包中确认。`;await ensureChain();
-    const hash=await eth().request({method:'eth_sendTransaction',params:[{from:S.you.wallet,to:tx.to,data:tx.data,value:tx.value}]});
+    if(tx.chainId!==S.cfg.chain.id||tx.tokenAddress?.toLowerCase()!==S.cfg.token.address.toLowerCase()||tx.from?.toLowerCase()!==S.you.wallet.toLowerCase()||tx.to?.toLowerCase()!==S.cfg.token.curve?.toLowerCase())throw new Error('购买信息不匹配，请刷新后重试。');
+    message.textContent=`预计获得 ${fmt(tx.expectedTokens)} ${S.cfg.token.symbol}，最低 ${fmt(tx.minimumTokens)}，请在钱包中确认。`;await ensureChain();
+    const current=await eth().request({method:'eth_accounts'});if(current[0]?.toLowerCase()!==tx.from.toLowerCase())throw new Error('钱包账户已切换，请重新登录。');
+    const hash=await eth().request({method:'eth_sendTransaction',params:[{from:tx.from,to:tx.to,data:tx.data,value:tx.value,chainId:'0x'+tx.chainId.toString(16)}]});
     message.innerHTML=`交易已提交，等待链上确认。<a href="${S.cfg.chain.explorer}/tx/${encodeURIComponent(hash)}" target="_blank" rel="noopener">查看交易 ↗</a>`;log(`已提交 ${amount} 测试 ETH 的购买交易，尚待确认。`);
     for(const sec of[4,10,20,40])setTimeout(()=>send({t:'recheck'}),sec*1000);
   }catch(e){message.textContent=`未完成：${e.shortMessage??e.message??e}`;}finally{buying=false;renderBuyOptions();}
@@ -340,6 +361,6 @@ for(const b of document.querySelectorAll('[data-color]')){b.classList.toggle('se
 function join(){audio.unlock();name=$('nameInput').value.trim()||'林间旅人';store.set('viber-name',name);$('btnJoin').disabled=true;$('btnJoin').innerHTML='正在走进风栖小镇…';connect();}
 $('btnJoin').onclick=join;$('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')join();});
 eth()?.on?.('accountsChanged',()=>{if(S.you?.wallet)toast('钱包账户已切换，请刷新后重新签名登录。');});
-async function loadConfig(){try{const r=await fetch('/api/config');if(!r.ok)throw new Error('config unavailable');S.cfg=await r.json();if(menu==='shop')renderBuyOptions();if(S.cfg.token.reason==='LOADING')setTimeout(loadConfig,3000);}catch{log('链上配置暂不可用，冒险仍可继续。','bad');}}
+async function loadConfig(){try{const r=await fetch('/api/config');if(!r.ok)throw new Error('config unavailable');S.cfg=await r.json();if(['shop','wallet'].includes(menu)&&!buying)renderMenu();if(S.cfg.token.reason==='LOADING')setTimeout(loadConfig,3000);}catch{log('链上配置暂不可用，冒险仍可继续。','bad');}}
 await loadConfig();
 try{const r=await fetch('/api/preview');if(r.ok){const m=await r.json();if(!hasJoined){S.W=m.W;S.H=m.H;S.tiles=m.tiles;m.resources.forEach(r=>S.resAt.set(r.y*S.W+r.x,r));}}}catch{}

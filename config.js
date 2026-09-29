@@ -1,6 +1,7 @@
 // All tunables live here. Override with environment variables, e.g.
 //   TOKEN_ADDRESS=0x... LORD_MIN=100000 npm start
 const env = process.env;
+export const WIND_TOKEN = '0xF08b54449B2f6EDd2D4af0A69DFd0cBfff6C8acB';
 
 export const config = {
   port: Number(env.PORT ?? 8790),
@@ -15,11 +16,13 @@ export const config = {
     faucet: 'https://faucet.testnet.chain.robinhood.com',
   },
 
-  // The game token. Defaults to an existing V6 launch so the demo runs before
-  // you launch your own; replace it with your token's address.
-  tokenAddress: env.TOKEN_ADDRESS ?? '0x2B558EFDA4c473e9aE8f0437604B72312778B79c',
+  // WIND, the game's own Robinhood testnet token. Environment overrides remain supported.
+  tokenAddress: env.TOKEN_ADDRESS ?? WIND_TOKEN,
 
-  // vibe/vibe V6 factory, used to find the token's bonding curve for in-game buys.
+  // Current vibe/vibe deployment, verified against WIND's creation transaction.
+  launchFactory: '0x40f1be6faf8DAB9C143cce1a0A04c2075Fb2DF59',
+
+  // Retained for older V6 tokens selected through TOKEN_ADDRESS.
   v6Factory: '0xcA9B3Af4aA4E4CC4C887c5E6b4906F8A309687A6',
 
   // Whole tokens a wallet must hold to be a Lord (can build a house, faster skill gain).
